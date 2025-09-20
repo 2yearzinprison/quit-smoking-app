@@ -41,30 +41,33 @@ function updateCounter() {
     const now = Date.now();
     const diff = now - startDate;
     
-    // Общее количество секунд
+    // Общее количество секунд с начала
     const totalSeconds = Math.floor(diff / 1000);
     
-    // Дни
+    // Дни (полные)
     const days = Math.floor(totalSeconds / SECONDS_PER_DAY);
     document.getElementById('days').textContent = days;
     
     // Сигарет НЕ выкурил (20 сигарет/день)
-    const cigarettesSaved = Math.floor((totalSeconds / SECONDS_PER_DAY) * CIGARETTES_PER_DAY);
+    const cigarettesSaved = Math.floor(days * CIGARETTES_PER_DAY);
     document.getElementById('cigarettes').textContent = cigarettesSaved.toLocaleString();
     
-    // Сэкономленные деньги (цена за сигарету × количество)
+    // Сэкономленные деньги
     const saved = Math.floor(cigarettesSaved * CIGARETTE_PRICE);
     document.getElementById('saved').textContent = saved.toLocaleString();
     
-    // Время в формате ЧЧ:ММ:СС
-    const secondsInDay = totalSeconds % SECONDS_PER_DAY;
-    const hours = Math.floor(secondsInDay / 3600);
-    const minutes = Math.floor((secondsInDay % 3600) / 60);
-    const seconds = secondsInDay % 60;
+    // Время в формате ДД:ЧЧ:ММ:СС (полное время)
+    const fullDays = Math.floor(totalSeconds / SECONDS_PER_DAY);
+    const remainingSeconds = totalSeconds % SECONDS_PER_DAY;
+    const hours = Math.floor(remainingSeconds / 3600);
+    const minutes = Math.floor((remainingSeconds % 3600) / 60);
+    const seconds = remainingSeconds % 60;
+    
+    // Показываем только часы:минуты:секунды (в пределах дня)
     document.getElementById('time').textContent = 
         `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     
-    // Факт дня (меняется каждый день)
+    // Факт дня
     const factKey = `fact_${days}`;
     let dailyFact = localStorage.getItem(factKey);
     if (!dailyFact) {
@@ -74,7 +77,7 @@ function updateCounter() {
     document.getElementById('dailyFact').textContent = dailyFact;
 }
 
-// Запуск каждую секунду
+// Запуск СРАЗУ и каждую СЕКУНДУ
 updateCounter();
 setInterval(updateCounter, 1000);
 
