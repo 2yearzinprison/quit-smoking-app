@@ -6,10 +6,6 @@ const PACK_PRICE = 170;
 const SECONDS_PER_DAY = 24 * 60 * 60;
 const MONEY_PER_SECOND = PACK_PRICE / SECONDS_PER_DAY;
 
-let lastDays = 0;
-let lastCigarettes = 0;
-let lastMoney = 0;
-
 function getRandomFact() {
     const allFacts = [
         "Через 20 минут: нормализуется давление и пульс",
@@ -44,55 +40,53 @@ function getRandomFact() {
     return allFacts[Math.floor(Math.random() * allFacts.length)];
 }
 
-function animateCounter(element, newValue, isMoney = false) {
-    const oldValue = parseInt(element.textContent.replace(/[^\d]/g, '')) || 0;
+// ПЛАВНАЯ АНИМАЦИЯ ЧИСЕЛ
+function animateCounter(elementId, startValue, endValue, duration = 800) {
+    let startTime = null;
     
-    if (oldValue === newValue) return;
-    
-    // Убираем анимацию
-    element.classList.remove('counter-animate', 'counter-glow', 'money-animate');
-    
-    // Пауза 10мс
-    setTimeout(() => {
-        // Добавляем анимацию
-        if (isMoney) {
-            element.classList.add('money-animate');
+    function animate(currentTime) {
+        if (startTime === null) startTime = currentTime;
+        
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Плавная функция (ease-out)
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const currentValue = Math.floor(startValue + (endValue - startValue) * easeOut);
+        
+        const element = document.getElementById(elementId);
+        if (elementId === 'saved') {
+            element.textContent = currentValue.toLocaleString() + ' ₽';
         } else {
-            element.classList.add('counter-animate', 'counter-glow');
+            element.textContent = currentValue;
         }
         
-        // Обновляем значение
-        if (isMoney) {
-            element.textContent = newValue.toLocaleString() + ' ₽';
+        if (progress < 1) {
+            requestAnimationFrame(animate);
         } else {
-            element.textContent = newValue;
+            // Финальное значение
+            if (elementId === 'saved') {
+                element.textContent = endValue.toLocaleString() + ' ₽';
+            } else {
+                element.textContent = endValue;
+            }
         }
-        
-        // Убираем анимацию через 600мс
-        setTimeout(() => {
-            element.classList.remove('counter-animate', 'counter-glow', 'money-animate');
-        }, 600);
-    }, 10);
+    }
+    
+    requestAnimationFrame(animate);
 }
 
 function updateUI() {
     const startBtn = document.getElementById('startBtn');
     
     if (!isStarted) {
-        const daysEl = document.getElementById('days');
-        const timeEl = document.getElementById('time');
-        const savedEl = document.getElementById('saved');
-        const cigarettesEl = document.getElementById('cigarettes');
-        
-        daysEl.textContent = '0';
-        timeEl.textContent = '00:00:00';
-        savedEl.textContent = '0 ₽';
-        cigarettesEl.textContent = '0';
-        
+        document.getElementById('days').textContent = '0';
+        document.getElementById('time').textContent = '00:00:00';
+        document.getElementById('saved').textContent = '0 ₽';
+        document.getElementById('cigarettes').textContent = '0';
         document.getElementById('dailyFact').textContent = 'Нажми "Я БРОСИЛ!" чтобы начать отсчёт';
         startBtn.textContent = '🚭 Я БРОСИЛ!';
         startBtn.classList.remove('started');
-        lastDays = lastCigarettes = lastMoney = 0;
         return;
     }
     
@@ -113,33 +107,34 @@ function updateUI() {
     const seconds = remainingSeconds % 60;
     const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     
-    // АНИМАЦИЯ ПРИ ИЗМЕНЕНИИ
+    // ПЛАВНАЯ АНИМАЦИЯ ДЛЯ ДНЕЙ
     const daysEl = document.getElementById('days');
+    const currentDays = parseInt(daysEl.textContent) || 0;
+    if (currentDays !== days) {
+        animateCounter('days', currentDays, days, 600);
+    }
+    
+    // ПЛАВНАЯ АНИМАЦИЯ ДЛЯ СИГАРЕТ
     const cigarettesEl = document.getElementById('cigarettes');
+    const currentCigarettes = parseInt(cigarettesEl.textContent) || 0;
+    if (currentCigarettes !== cigarettes) {
+        animateCounter('cigarettes', currentCigarettes, cigarettes, 600);
+    }
+    
+    // ПЛАВНАЯ АНИМАЦИЯ ДЛЯ ДЕНЕГ
     const moneyEl = document.getElementById('saved');
+    const currentMoneyText = moneyEl.textContent.replace(/[^\d]/g, '');
+    const currentMoney = parseInt(currentMoneyText) || 0;
+    if (currentMoney !== money) {
+        animateCounter('saved', currentMoney, money, 400);
+    }
+    
+    // ВРЕМЯ (плавный transition)
     const timeEl = document.getElementById('time');
-    
-    // Дни
-    if (lastDays !== days) {
-        animateCounter(daysEl, days);
-        lastDays = days;
+    if (timeEl.textContent !== timeString) {
+        timeEl.style.transition = 'all 0.3s ease';
+        timeEl.textContent = timeString;
     }
-    
-    // Сигареты
-    if (lastCigarettes !== cigarettes) {
-        animateCounter(cigarettesEl, cigarettes);
-        lastCigarettes = cigarettes;
-    }
-    
-    // Деньги
-    if (lastMoney !== money) {
-        animateCounter(moneyEl, money, true);
-        lastMoney = money;
-    }
-    
-    // Время (плавный transition)
-    timeEl.style.transition = 'all 0.3s ease';
-    timeEl.textContent = timeString;
     
     // Факт дня
     const factKey = `fact_${days}`;
@@ -156,7 +151,6 @@ function startQuit() {
         startDate = Date.now();
         localStorage.setItem('quitStartDate', startDate);
         isStarted = true;
-        lastDays = lastCigarettes = lastMoney = 0;
         updateUI();
     }
 }
