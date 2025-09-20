@@ -6,6 +6,10 @@ const PACK_PRICE = 170;
 const SECONDS_PER_DAY = 24 * 60 * 60;
 const MONEY_PER_SECOND = PACK_PRICE / SECONDS_PER_DAY;
 
+let lastDays = 0;
+let lastCigarettes = 0;
+let lastMoney = 0;
+
 function getRandomFact() {
     const allFacts = [
         "Через 20 минут: нормализуется давление и пульс",
@@ -40,44 +44,55 @@ function getRandomFact() {
     return allFacts[Math.floor(Math.random() * allFacts.length)];
 }
 
-// Простая анимация "катания" чисел
-function animateNumber(elementId, oldValue, newValue, duration = 500) {
+function animateCounter(element, newValue, isMoney = false) {
+    const oldValue = parseInt(element.textContent.replace(/[^\d]/g, '')) || 0;
+    
     if (oldValue === newValue) return;
     
-    const startTime = performance.now();
-    const difference = newValue - oldValue;
+    // Убираем анимацию
+    element.classList.remove('counter-animate', 'counter-glow', 'money-animate');
     
-    function animate(time) {
-        const elapsed = time - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // Плавная функция (ease-out)
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        const currentValue = Math.floor(oldValue + (difference * easeOut));
-        
-        document.getElementById(elementId).textContent = currentValue;
-        
-        if (progress < 1) {
-            requestAnimationFrame(animate);
+    // Пауза 10мс
+    setTimeout(() => {
+        // Добавляем анимацию
+        if (isMoney) {
+            element.classList.add('money-animate');
         } else {
-            document.getElementById(elementId).textContent = newValue;
+            element.classList.add('counter-animate', 'counter-glow');
         }
-    }
-    
-    requestAnimationFrame(animate);
+        
+        // Обновляем значение
+        if (isMoney) {
+            element.textContent = newValue.toLocaleString() + ' ₽';
+        } else {
+            element.textContent = newValue;
+        }
+        
+        // Убираем анимацию через 600мс
+        setTimeout(() => {
+            element.classList.remove('counter-animate', 'counter-glow', 'money-animate');
+        }, 600);
+    }, 10);
 }
 
 function updateUI() {
     const startBtn = document.getElementById('startBtn');
     
     if (!isStarted) {
-        document.getElementById('days').textContent = '0';
-        document.getElementById('time').textContent = '00:00:00';
-        document.getElementById('saved').textContent = '0 ₽';
-        document.getElementById('cigarettes').textContent = '0';
+        const daysEl = document.getElementById('days');
+        const timeEl = document.getElementById('time');
+        const savedEl = document.getElementById('saved');
+        const cigarettesEl = document.getElementById('cigarettes');
+        
+        daysEl.textContent = '0';
+        timeEl.textContent = '00:00:00';
+        savedEl.textContent = '0 ₽';
+        cigarettesEl.textContent = '0';
+        
         document.getElementById('dailyFact').textContent = 'Нажми "Я БРОСИЛ!" чтобы начать отсчёт';
         startBtn.textContent = '🚭 Я БРОСИЛ!';
         startBtn.classList.remove('started');
+        lastDays = lastCigarettes = lastMoney = 0;
         return;
     }
     
@@ -98,39 +113,33 @@ function updateUI() {
     const seconds = remainingSeconds % 60;
     const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     
-    // АНИМАЦИЯ ПРИ ИЗМЕНЕНИИ ЗНАЧЕНИЙ
+    // АНИМАЦИЯ ПРИ ИЗМЕНЕНИИ
     const daysEl = document.getElementById('days');
     const cigarettesEl = document.getElementById('cigarettes');
     const moneyEl = document.getElementById('saved');
     const timeEl = document.getElementById('time');
     
-    const oldDays = parseInt(daysEl.textContent) || 0;
-    const oldCigarettes = parseInt(cigarettesEl.textContent) || 0;
-    const oldMoney = parseInt(moneyEl.textContent.replace(/[^\d]/g, '')) || 0;
-    const oldTime = timeEl.textContent;
-    
-    // Анимируем только если значения изменились
-    if (oldDays !== days) {
-        animateNumber('days', oldDays, days);
+    // Дни
+    if (lastDays !== days) {
+        animateCounter(daysEl, days);
+        lastDays = days;
     }
     
-    if (oldCigarettes !== cigarettes) {
-        animateNumber('cigarettes', oldCigarettes, cigarettes);
+    // Сигареты
+    if (lastCigarettes !== cigarettes) {
+        animateCounter(cigarettesEl, cigarettes);
+        lastCigarettes = cigarettes;
     }
     
-    if (oldMoney !== money) {
-        animateNumber('saved', oldMoney, money, 300);
-        // Обновляем текст с ₽ после анимации
-        setTimeout(() => {
-            document.getElementById('saved').textContent = money.toLocaleString() + ' ₽';
-        }, 300);
+    // Деньги
+    if (lastMoney !== money) {
+        animateCounter(moneyEl, money, true);
+        lastMoney = money;
     }
     
-    // Время обновляем мгновенно (как настоящие часы)
-    if (oldTime !== timeString) {
-        timeEl.style.transition = 'all 0.2s ease';
-        timeEl.textContent = timeString;
-    }
+    // Время (плавный transition)
+    timeEl.style.transition = 'all 0.3s ease';
+    timeEl.textContent = timeString;
     
     // Факт дня
     const factKey = `fact_${days}`;
@@ -147,6 +156,7 @@ function startQuit() {
         startDate = Date.now();
         localStorage.setItem('quitStartDate', startDate);
         isStarted = true;
+        lastDays = lastCigarettes = lastMoney = 0;
         updateUI();
     }
 }
