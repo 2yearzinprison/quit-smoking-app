@@ -6,13 +6,7 @@ const PACK_PRICE = 170;
 const SECONDS_PER_DAY = 24 * 60 * 60;
 const MONEY_PER_SECOND = PACK_PRICE / SECONDS_PER_DAY;
 
-// Целевые значения для анимации
-let targetDays = 0;
-let targetCigarettes = 0;
-let targetMoney = 0;
-let targetTime = { hours: 0, minutes: 0, seconds: 0 };
-
-// Текущие значения (для плавной анимации)
+// Для анимации
 let currentDays = 0;
 let currentCigarettes = 0;
 let currentMoney = 0;
@@ -53,67 +47,65 @@ function getRandomFact() {
 }
 
 // Плавная анимация чисел
-function animateNumbers() {
-    // Анимация дней
+function animateTo(targetDays, targetCigarettes, targetMoney, targetTime) {
+    let animated = false;
+    
+    // Дни
     if (Math.abs(currentDays - targetDays) > 0) {
-        const increment = targetDays > currentDays ? 1 : -1;
-        currentDays += increment;
+        currentDays += targetDays > currentDays ? 1 : -1;
         document.getElementById('days').textContent = currentDays;
+        animated = true;
     }
     
-    // Анимация сигарет
+    // Сигареты
     if (Math.abs(currentCigarettes - targetCigarettes) > 0) {
-        const increment = targetCigarettes > currentCigarettes ? 1 : -1;
-        currentCigarettes += increment;
+        currentCigarettes += targetCigarettes > currentCigarettes ? 1 : -1;
         document.getElementById('cigarettes').textContent = currentCigarettes;
+        animated = true;
     }
     
-    // Анимация денег
+    // Деньги
     if (Math.abs(currentMoney - targetMoney) > 0) {
-        const increment = targetMoney > currentMoney ? 1 : -1;
-        currentMoney += increment;
+        currentMoney += targetMoney > currentMoney ? 1 : -1;
         document.getElementById('saved').textContent = currentMoney.toLocaleString() + ' ₽';
+        animated = true;
     }
     
-    // Анимация времени
-    if (currentTime.hours !== targetTime.hours ||
-        currentTime.minutes !== targetTime.minutes ||
-        currentTime.seconds !== targetTime.seconds) {
-        
-        if (currentTime.seconds !== targetTime.seconds) {
-            currentTime.seconds += targetTime.seconds > currentTime.seconds ? 1 : -1;
-            if (currentTime.seconds > 59) currentTime.seconds = 0;
-            if (currentTime.seconds < 0) currentTime.seconds = 59;
-        } else if (currentTime.minutes !== targetTime.minutes) {
-            currentTime.minutes += targetTime.minutes > currentTime.minutes ? 1 : -1;
-            if (currentTime.minutes > 59) currentTime.minutes = 0;
-            if (currentTime.minutes < 0) currentTime.minutes = 59;
-            currentTime.seconds = 0;
-        } else if (currentTime.hours !== targetTime.hours) {
-            currentTime.hours += targetTime.hours > currentTime.hours ? 1 : -1;
-            if (currentTime.hours > 23) currentTime.hours = 0;
-            if (currentTime.hours < 0) currentTime.hours = 23;
-            currentTime.minutes = 0;
-            currentTime.seconds = 0;
-        }
-        
+    // Время
+    if (currentTime.seconds !== targetTime.seconds) {
+        currentTime.seconds = targetTime.seconds;
+        animated = true;
+    }
+    if (currentTime.minutes !== targetTime.minutes) {
+        currentTime.minutes = targetTime.minutes;
+        animated = true;
+    }
+    if (currentTime.hours !== targetTime.hours) {
+        currentTime.hours = targetTime.hours;
+        animated = true;
+    }
+    
+    if (animated) {
         document.getElementById('time').textContent = 
             `${currentTime.hours.toString().padStart(2, '0')}:${currentTime.minutes.toString().padStart(2, '0')}:${currentTime.seconds.toString().padStart(2, '0')}`;
     }
+    
+    return !animated; // true если всё дошло до цели
 }
 
-// Основной расчет и обновление
 function updateUI() {
     const startBtn = document.getElementById('startBtn');
     
     if (!isStarted) {
-        // Сброс анимации
-        targetDays = currentDays = 0;
-        targetCigarettes = currentCigarettes = 0;
-        targetMoney = currentMoney = 0;
-        targetTime = currentTime = { hours: 0, minutes: 0, seconds: 0 };
-        animateNumbers();
+        currentDays = 0;
+        currentCigarettes = 0;
+        currentMoney = 0;
+        currentTime = { hours: 0, minutes: 0, seconds: 0 };
         
+        document.getElementById('days').textContent = '0';
+        document.getElementById('time').textContent = '00:00:00';
+        document.getElementById('saved').textContent = '0 ₽';
+        document.getElementById('cigarettes').textContent = '0';
         document.getElementById('dailyFact').textContent = 'Нажми "Я БРОСИЛ!" чтобы начать отсчёт';
         startBtn.textContent = '🚭 Я БРОСИЛ!';
         startBtn.classList.remove('started');
@@ -123,22 +115,24 @@ function updateUI() {
     startBtn.textContent = '✅ Отлично! Продолжай!';
     startBtn.classList.add('started');
     
+    // РЕАЛЬНЫЙ РАСЧЁТ
     const now = Date.now();
     const diff = now - startDate;
     const totalSeconds = Math.floor(diff / 1000);
     
-    // Целевые значения (реальный расчет)
-    targetDays = Math.floor(totalSeconds / SECONDS_PER_DAY);
-    targetCigarettes = Math.floor((totalSeconds / SECONDS_PER_DAY) * CIGARETTES_PER_DAY);
-    targetMoney = Math.floor(totalSeconds * MONEY_PER_SECOND);
+    const targetDays = Math.floor(totalSeconds / SECONDS_PER_DAY);
+    const targetCigarettes = Math.floor((totalSeconds / SECONDS_PER_DAY) * CIGARETTES_PER_DAY);
+    const targetMoney = Math.floor(totalSeconds * MONEY_PER_SECOND);
     
     const remainingSeconds = totalSeconds % SECONDS_PER_DAY;
-    targetTime.hours = Math.floor(remainingSeconds / 3600);
-    targetTime.minutes = Math.floor((remainingSeconds % 3600) / 60);
-    targetTime.seconds = remainingSeconds % 60;
+    const targetTime = {
+        hours: Math.floor(remainingSeconds / 3600),
+        minutes: Math.floor((remainingSeconds % 3600) / 60),
+        seconds: remainingSeconds % 60
+    };
     
-    // Анимация
-    animateNumbers();
+    // АНИМАЦИЯ (каждые 50мс для плавности)
+    const animationDone = animateTo(targetDays, targetCigarettes, targetMoney, targetTime);
     
     // Факт дня
     const factKey = `fact_${targetDays}`;
@@ -148,6 +142,14 @@ function updateUI() {
         localStorage.setItem(factKey, dailyFact);
     }
     document.getElementById('dailyFact').textContent = dailyFact;
+    
+    // Если анимация закончена, обновляем цели
+    if (animationDone) {
+        currentDays = targetDays;
+        currentCigarettes = targetCigarettes;
+        currentMoney = targetMoney;
+        currentTime = { ...targetTime };
+    }
 }
 
 function startQuit() {
@@ -155,13 +157,11 @@ function startQuit() {
         startDate = Date.now();
         localStorage.setItem('quitStartDate', startDate);
         isStarted = true;
+        currentDays = currentCigarettes = currentMoney = 0;
+        currentTime = { hours: 0, minutes: 0, seconds: 0 };
         updateUI();
     }
 }
-
-// Обновление каждые 100мс для плавности
-updateUI();
-setInterval(updateUI, 100);
 
 function resetCounter() {
     if (confirm('Сбросить счётчик? Это нельзя будет отменить!')) {
@@ -172,10 +172,40 @@ function resetCounter() {
         });
         startDate = null;
         isStarted = false;
+        currentDays = currentCigarettes = currentMoney = 0;
+        currentTime = { hours: 0, minutes: 0, seconds: 0 };
         updateUI();
     }
 }
 
-if (isStarted) {
-    updateUI();
-}
+// ОСНОВНОЙ ЦИКЛ: каждую СЕКУНДУ считаем, каждые 50мс анимируем
+setInterval(() => {
+    if (isStarted) {
+        updateUI();
+    }
+}, 1000);
+
+// Анимация: каждые 50мс
+setInterval(() => {
+    if (isStarted) {
+        const now = Date.now();
+        const diff = now - startDate;
+        const totalSeconds = Math.floor(diff / 1000);
+        
+        const targetDays = Math.floor(totalSeconds / SECONDS_PER_DAY);
+        const targetCigarettes = Math.floor((totalSeconds / SECONDS_PER_DAY) * CIGARETTES_PER_DAY);
+        const targetMoney = Math.floor(totalSeconds * MONEY_PER_SECOND);
+        
+        const remainingSeconds = totalSeconds % SECONDS_PER_DAY;
+        const targetTime = {
+            hours: Math.floor(remainingSeconds / 3600),
+            minutes: Math.floor((remainingSeconds % 3600) / 60),
+            seconds: remainingSeconds % 60
+        };
+        
+        animateTo(targetDays, targetCigarettes, targetMoney, targetTime);
+    }
+}, 50);
+
+// Инициализация
+updateUI();
