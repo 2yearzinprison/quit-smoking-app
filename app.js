@@ -1,12 +1,10 @@
 let startDate = localStorage.getItem('quitStartDate');
 let isStarted = startDate ? true : false;
 
-// Параметры курения
 const CIGARETTES_PER_DAY = 20;
 const CIGARETTE_PRICE = 170 / 20;
 const SECONDS_PER_DAY = 24 * 60 * 60;
 
-// Локальные факты (резерв)
 const fallbackFacts = [
     "Через 20 минут: нормализуется давление и пульс",
     "Через 8 часов: уровень кислорода в крови возвращается к норме",
@@ -17,12 +15,10 @@ const fallbackFacts = [
 
 async function getRandomFactFromAPI() {
     try {
-        // Бесплатный API с цитатами (можно заменить на тематический)
         const response = await fetch('https://api.quotable.io/random?tags=motivational');
         const data = await response.json();
         return `💡 "${data.content}" — ${data.author}`;
     } catch (error) {
-        console.log('API не работает, использую локальный факт');
         return fallbackFacts[Math.floor(Math.random() * fallbackFacts.length)];
     }
 }
@@ -52,20 +48,17 @@ function updateUI() {
     const diff = now - startDate;
     const totalSeconds = Math.floor(diff / 1000);
     
-    // Дни
     const days = Math.floor(totalSeconds / SECONDS_PER_DAY);
     document.getElementById('days').textContent = days;
     
-    // Сигареты (по секундам)
+    // СИГАРЕТЫ: ОКРУГЛЯЕМ ВВЕРХ (реалистично)
     const totalDaysFraction = totalSeconds / SECONDS_PER_DAY;
-    const cigarettesSaved = Math.floor(totalDaysFraction * CIGARETTES_PER_DAY);
+    const cigarettesSaved = Math.ceil(totalDaysFraction * CIGARETTES_PER_DAY);
     document.getElementById('cigarettes').textContent = cigarettesSaved.toLocaleString();
     
-    // Деньги
     const saved = Math.floor(cigarettesSaved * CIGARETTE_PRICE);
     document.getElementById('saved').textContent = saved.toLocaleString();
     
-    // Время
     const remainingSeconds = totalSeconds % SECONDS_PER_DAY;
     const hours = Math.floor(remainingSeconds / 3600);
     const minutes = Math.floor((remainingSeconds % 3600) / 60);
@@ -73,17 +66,14 @@ function updateUI() {
     document.getElementById('time').textContent = 
         `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     
-    // Факт дня (из API или локальный)
     const factKey = `fact_${days}`;
     let dailyFact = localStorage.getItem(factKey);
     
     if (!dailyFact) {
-        // Пытаемся получить из API
         getRandomFactFromAPI().then(fact => {
             localStorage.setItem(factKey, fact);
             document.getElementById('dailyFact').textContent = fact;
         }).catch(() => {
-            // Fallback на локальный
             const localFact = getLocalFact();
             localStorage.setItem(factKey, localFact);
             document.getElementById('dailyFact').textContent = localFact;
@@ -102,7 +92,6 @@ function startQuit() {
     }
 }
 
-// Запуск каждую секунду
 updateUI();
 setInterval(updateUI, 1000);
 
