@@ -2,8 +2,21 @@ let startDate = localStorage.getItem('quitStartDate');
 let isStarted = startDate ? true : false;
 
 const CIGARETTES_PER_DAY = 20;
-const CIGARETTE_PRICE = 170 / 20;
+const PACK_PRICE = 170;
 const SECONDS_PER_DAY = 24 * 60 * 60;
+const MONEY_PER_SECOND = PACK_PRICE / SECONDS_PER_DAY;
+
+// Целевые значения для анимации
+let targetDays = 0;
+let targetCigarettes = 0;
+let targetMoney = 0;
+let targetTime = { hours: 0, minutes: 0, seconds: 0 };
+
+// Текущие значения (для плавной анимации)
+let currentDays = 0;
+let currentCigarettes = 0;
+let currentMoney = 0;
+let currentTime = { hours: 0, minutes: 0, seconds: 0 };
 
 function getRandomFact() {
     const allFacts = [
@@ -39,14 +52,68 @@ function getRandomFact() {
     return allFacts[Math.floor(Math.random() * allFacts.length)];
 }
 
+// Плавная анимация чисел
+function animateNumbers() {
+    // Анимация дней
+    if (Math.abs(currentDays - targetDays) > 0) {
+        const increment = targetDays > currentDays ? 1 : -1;
+        currentDays += increment;
+        document.getElementById('days').textContent = currentDays;
+    }
+    
+    // Анимация сигарет
+    if (Math.abs(currentCigarettes - targetCigarettes) > 0) {
+        const increment = targetCigarettes > currentCigarettes ? 1 : -1;
+        currentCigarettes += increment;
+        document.getElementById('cigarettes').textContent = currentCigarettes;
+    }
+    
+    // Анимация денег
+    if (Math.abs(currentMoney - targetMoney) > 0) {
+        const increment = targetMoney > currentMoney ? 1 : -1;
+        currentMoney += increment;
+        document.getElementById('saved').textContent = currentMoney.toLocaleString() + ' ₽';
+    }
+    
+    // Анимация времени
+    if (currentTime.hours !== targetTime.hours ||
+        currentTime.minutes !== targetTime.minutes ||
+        currentTime.seconds !== targetTime.seconds) {
+        
+        if (currentTime.seconds !== targetTime.seconds) {
+            currentTime.seconds += targetTime.seconds > currentTime.seconds ? 1 : -1;
+            if (currentTime.seconds > 59) currentTime.seconds = 0;
+            if (currentTime.seconds < 0) currentTime.seconds = 59;
+        } else if (currentTime.minutes !== targetTime.minutes) {
+            currentTime.minutes += targetTime.minutes > currentTime.minutes ? 1 : -1;
+            if (currentTime.minutes > 59) currentTime.minutes = 0;
+            if (currentTime.minutes < 0) currentTime.minutes = 59;
+            currentTime.seconds = 0;
+        } else if (currentTime.hours !== targetTime.hours) {
+            currentTime.hours += targetTime.hours > currentTime.hours ? 1 : -1;
+            if (currentTime.hours > 23) currentTime.hours = 0;
+            if (currentTime.hours < 0) currentTime.hours = 23;
+            currentTime.minutes = 0;
+            currentTime.seconds = 0;
+        }
+        
+        document.getElementById('time').textContent = 
+            `${currentTime.hours.toString().padStart(2, '0')}:${currentTime.minutes.toString().padStart(2, '0')}:${currentTime.seconds.toString().padStart(2, '0')}`;
+    }
+}
+
+// Основной расчет и обновление
 function updateUI() {
     const startBtn = document.getElementById('startBtn');
     
     if (!isStarted) {
-        document.getElementById('days').textContent = '0';
-        document.getElementById('time').textContent = '00:00:00';
-        document.getElementById('saved').textContent = '0';
-        document.getElementById('cigarettes').textContent = '0';
+        // Сброс анимации
+        targetDays = currentDays = 0;
+        targetCigarettes = currentCigarettes = 0;
+        targetMoney = currentMoney = 0;
+        targetTime = currentTime = { hours: 0, minutes: 0, seconds: 0 };
+        animateNumbers();
+        
         document.getElementById('dailyFact').textContent = 'Нажми "Я БРОСИЛ!" чтобы начать отсчёт';
         startBtn.textContent = '🚭 Я БРОСИЛ!';
         startBtn.classList.remove('started');
@@ -60,26 +127,21 @@ function updateUI() {
     const diff = now - startDate;
     const totalSeconds = Math.floor(diff / 1000);
     
-    const days = Math.floor(totalSeconds / SECONDS_PER_DAY);
-    document.getElementById('days').textContent = days;
-    
-    // Сигареты: ОКРУГЛЯЕМ ВВЕРХ (реалистично)
-    const totalDaysFraction = totalSeconds / SECONDS_PER_DAY;
-    const cigarettesSaved = Math.ceil(totalDaysFraction * CIGARETTES_PER_DAY);
-    document.getElementById('cigarettes').textContent = cigarettesSaved.toLocaleString();
-    
-    const saved = Math.floor(cigarettesSaved * CIGARETTE_PRICE);
-    document.getElementById('saved').textContent = saved.toLocaleString();
+    // Целевые значения (реальный расчет)
+    targetDays = Math.floor(totalSeconds / SECONDS_PER_DAY);
+    targetCigarettes = Math.floor((totalSeconds / SECONDS_PER_DAY) * CIGARETTES_PER_DAY);
+    targetMoney = Math.floor(totalSeconds * MONEY_PER_SECOND);
     
     const remainingSeconds = totalSeconds % SECONDS_PER_DAY;
-    const hours = Math.floor(remainingSeconds / 3600);
-    const minutes = Math.floor((remainingSeconds % 3600) / 60);
-    const seconds = remainingSeconds % 60;
-    document.getElementById('time').textContent = 
-        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    targetTime.hours = Math.floor(remainingSeconds / 3600);
+    targetTime.minutes = Math.floor((remainingSeconds % 3600) / 60);
+    targetTime.seconds = remainingSeconds % 60;
     
-    // Простые факты без API
-    const factKey = `fact_${days}`;
+    // Анимация
+    animateNumbers();
+    
+    // Факт дня
+    const factKey = `fact_${targetDays}`;
     let dailyFact = localStorage.getItem(factKey);
     if (!dailyFact) {
         dailyFact = getRandomFact();
@@ -97,8 +159,9 @@ function startQuit() {
     }
 }
 
+// Обновление каждые 100мс для плавности
 updateUI();
-setInterval(updateUI, 1000);
+setInterval(updateUI, 100);
 
 function resetCounter() {
     if (confirm('Сбросить счётчик? Это нельзя будет отменить!')) {
