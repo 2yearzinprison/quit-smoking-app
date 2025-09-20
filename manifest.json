@@ -2,11 +2,14 @@
     "name": "Брось курить",
     "short_name": "QuitSmoke",
     "description": "Приложение для бросания курить",
-    "start_url": "/",
+    "start_url": "/index.html",
     "display": "standalone",
     "background_color": "#f8f9fa",
     "theme_color": "#4CAF50",
     "orientation": "portrait",
+    "scope": "/",
+    "apple-mobile-web-app-capable": true,
+    "apple-mobile-web-app-status-bar-style": "default",
     "icons": [
         {
             "src": "icon-192.png",
