@@ -1,4 +1,5 @@
-let startDate = localStorage.getItem('quitStartDate') || Date.now();
+let startDate = localStorage.getItem('quitStartDate');
+let isStarted = startDate ? true : false;
 
 // Параметры курения
 const CIGARETTES_PER_DAY = 20; // пачка в день
@@ -37,18 +38,34 @@ function getRandomFact() {
     return facts[Math.floor(Math.random() * facts.length)];
 }
 
-function updateCounter() {
+function updateUI() {
+    const startBtn = document.getElementById('startBtn');
+    
+    if (!isStarted) {
+        // До старта
+        document.getElementById('days').textContent = '0';
+        document.getElementById('time').textContent = '00:00:00';
+        document.getElementById('saved').textContent = '0';
+        document.getElementById('cigarettes').textContent = '0';
+        document.getElementById('dailyFact').textContent = 'Нажми "Я БРОСИЛ!" чтобы начать отсчёт';
+        startBtn.textContent = '🚭 Я БРОСИЛ!';
+        startBtn.classList.remove('started');
+        return;
+    }
+    
+    // После старта
+    startBtn.textContent = '✅ Отлично! Продолжай!';
+    startBtn.classList.add('started');
+    
     const now = Date.now();
     const diff = now - startDate;
-    
-    // Общее количество секунд с начала
     const totalSeconds = Math.floor(diff / 1000);
     
     // Дни (полные)
     const days = Math.floor(totalSeconds / SECONDS_PER_DAY);
     document.getElementById('days').textContent = days;
     
-    // Сигарет НЕ выкурил (20 сигарет/день)
+    // Сигарет НЕ выкурил
     const cigarettesSaved = Math.floor(days * CIGARETTES_PER_DAY);
     document.getElementById('cigarettes').textContent = cigarettesSaved.toLocaleString();
     
@@ -56,14 +73,11 @@ function updateCounter() {
     const saved = Math.floor(cigarettesSaved * CIGARETTE_PRICE);
     document.getElementById('saved').textContent = saved.toLocaleString();
     
-    // Время в формате ДД:ЧЧ:ММ:СС (полное время)
-    const fullDays = Math.floor(totalSeconds / SECONDS_PER_DAY);
+    // Время в пределах дня
     const remainingSeconds = totalSeconds % SECONDS_PER_DAY;
     const hours = Math.floor(remainingSeconds / 3600);
     const minutes = Math.floor((remainingSeconds % 3600) / 60);
     const seconds = remainingSeconds % 60;
-    
-    // Показываем только часы:минуты:секунды (в пределах дня)
     document.getElementById('time').textContent = 
         `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     
@@ -77,9 +91,18 @@ function updateCounter() {
     document.getElementById('dailyFact').textContent = dailyFact;
 }
 
-// Запуск СРАЗУ и каждую СЕКУНДУ
-updateCounter();
-setInterval(updateCounter, 1000);
+function startQuit() {
+    if (!isStarted) {
+        startDate = Date.now();
+        localStorage.setItem('quitStartDate', startDate);
+        isStarted = true;
+        updateUI();
+    }
+}
+
+// Запуск каждую секунду
+updateUI();
+setInterval(updateUI, 1000);
 
 function resetCounter() {
     if (confirm('Сбросить счётчик? Это нельзя будет отменить!')) {
@@ -90,7 +113,13 @@ function resetCounter() {
             }
         });
         localStorage.removeItem('quitStartDate');
-        startDate = Date.now();
-        updateCounter();
+        startDate = null;
+        isStarted = false;
+        updateUI();
     }
+}
+
+// Проверяем при загрузке страницы
+if (isStarted) {
+    updateUI();
 }
