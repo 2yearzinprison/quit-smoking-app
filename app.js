@@ -65,11 +65,12 @@ function updateUI() {
     const days = Math.floor(totalSeconds / SECONDS_PER_DAY);
     document.getElementById('days').textContent = days;
     
-    // Сигарет НЕ выкурил
-    const cigarettesSaved = Math.floor(days * CIGARETTES_PER_DAY);
+    // Сигарет НЕ выкурил (ТОЧНО ПО СЕКУНДАМ)
+    const totalDaysFraction = totalSeconds / SECONDS_PER_DAY;
+    const cigarettesSaved = Math.floor(totalDaysFraction * CIGARETTES_PER_DAY);
     document.getElementById('cigarettes').textContent = cigarettesSaved.toLocaleString();
     
-    // Сэкономленные деньги
+    // Сэкономленные деньги (по сигаретам)
     const saved = Math.floor(cigarettesSaved * CIGARETTE_PRICE);
     document.getElementById('saved').textContent = saved.toLocaleString();
     
