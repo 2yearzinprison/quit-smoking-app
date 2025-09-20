@@ -18,32 +18,31 @@
         <p>⏰ Общее время: <span id="time">00:00:00</span></p>
         <p>💰 Сэкономлено: <span id="saved">0</span> ₽</p>
         <p>🚬 Сигарет НЕ выкурил: <span id="cigarettes">0</span></p>
+        
+        <div class="button-group">
+            <button id="startBtn" onclick="startQuit()" class="start-btn">🚭 Я БРОСИЛ!</button>
+            <button onclick="resetCounter()" class="reset-btn">🔄 Сбросить счётчик</button>
+        </div>
+        
         <div class="fact-box">
             <h3>💡 Факт дня</h3>
-            <p id="dailyFact">Загрузка...</p>
+            <p id="dailyFact">Нажми "Я БРОСИЛ!" чтобы начать отсчёт</p>
         </div>
-        <button onclick="resetCounter()">🔄 Сбросить счётчик</button>
     </div>
     
     <script src="app.js"></script>
     <script>
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/sw.js')
-            .then(function(registration) {
-                console.log('SW зарегистрирован: ', registration);
-            })
-            .catch(function(registrationError) {
-                console.log('SW регистрация провалилась: ', registrationError);
-            });
-    });
-}
-</script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/sw.js')
+                .then(function(registration) {
+                    console.log('SW зарегистрирован: ', registration);
+                })
+                .catch(function(registrationError) {
+                    console.log('SW регистрация провалилась: ', registrationError);
+                });
+        });
+    }
     </script>
 </body>
 </html>
-
