@@ -43,6 +43,52 @@ p {
     font-weight: bold;
 }
 
+.button-group {
+    margin: 20px 0;
+}
+
+.start-btn {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 25px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 10px;
+    width: 100%;
+    transition: background 0.3s;
+}
+
+.start-btn:hover {
+    background: #45a049;
+}
+
+.start-btn.started {
+    background: #f39c12;
+}
+
+.start-btn.started:hover {
+    background: #e67e22;
+}
+
+.reset-btn {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.3s;
+    width: 100%;
+}
+
+.reset-btn:hover {
+    background: #c0392b;
+}
+
 .fact-box {
     background: #f8f9fa;
     border-radius: 10px;
@@ -62,21 +108,4 @@ p {
     font-size: 14px;
     line-height: 1.4;
     color: #555;
-}
-
-button {
-    background: #4CAF50;
-    color: white;
-    border: none;
-    padding: 15px 30px;
-    border-radius: 25px;
-    font-size: 16px;
-    cursor: pointer;
-    margin-top: 20px;
-    transition: background 0.3s;
-    width: 100%;
-}
-
-button:hover {
-    background: #45a049;
 }
