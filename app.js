@@ -40,43 +40,19 @@ function getRandomFact() {
     return allFacts[Math.floor(Math.random() * allFacts.length)];
 }
 
-// ПЛАВНАЯ АНИМАЦИЯ (только для целых изменений)
-function animateCounter(elementId, startValue, endValue, duration = 800) {
-    let startTime = null;
-    
-    function animate(currentTime) {
-        if (startTime === null) startTime = currentTime;
-        
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        const currentValue = Math.floor(startValue + (endValue - startValue) * easeOut);
-        
-        const element = document.getElementById(elementId);
-        if (elementId === 'saved') {
-            element.textContent = currentValue.toLocaleString() + ' ₽';
-        } else {
-            element.textContent = currentValue;
-        }
-        
-        if (progress < 1) {
-            requestAnimationFrame(animate);
-        } else {
-            if (elementId === 'saved') {
-                element.textContent = endValue.toLocaleString() + ' ₽';
-            } else {
-                element.textContent = endValue;
-            }
-        }
-    }
-    
-    requestAnimationFrame(animate);
+// ТОЧНОЕ ФОРМАТИРОВАНИЕ ДЕНЕГ
+function formatMoney(money) {
+    // Округляем до 2 знаков после запятой
+    const rounded = Math.round(money * 100) / 100;
+    const [rubles, kopecks] = rounded.toFixed(2).split('.');
+    return rubles + ',' + kopecks.padStart(2, '0') + ' ₽';
 }
 
-function formatMoney(money) {
-    // Форматируем деньги с копейками: 123,45 ₽
-    return money.toFixed(2).replace('.', ',') + ' ₽';
+// ПАРСИНГ ДЕНЕГ ИЗ ТЕКСТА
+function parseMoney(text) {
+    // Извлекаем число из формата "123,45 ₽"
+    const cleanText = text.replace(/[₽\s]/g, '').replace(',', '.');
+    return parseFloat(cleanText) || 0;
 }
 
 function updateUI() {
@@ -100,56 +76,34 @@ function updateUI() {
     const diff = now - startDate;
     const totalSeconds = Math.floor(diff / 1000);
     
+    // Дни
     const days = Math.floor(totalSeconds / SECONDS_PER_DAY);
-    const cigarettes = Math.floor((totalSeconds / SECONDS_PER_DAY) * CIGARETTES_PER_DAY);
+    document.getElementById('days').textContent = days;
     
-    // ДЕНЬГИ: показываем копейки, но анимируем только при изменении рублей
+    // Сигареты
+    const cigarettes = Math.floor((totalSeconds / SECONDS_PER_DAY) * CIGARETTES_PER_DAY);
+    document.getElementById('cigarettes').textContent = cigarettes;
+    
+    // ДЕНЬГИ: точно по секундам
     const moneyExact = totalSeconds * MONEY_PER_SECOND;
-    const moneyRubles = Math.floor(moneyExact);
     const moneyFormatted = formatMoney(moneyExact);
     
+    // Обновляем деньги только если изменились
+    const moneyEl = document.getElementById('saved');
+    const currentMoneyText = moneyEl.textContent;
+    if (currentMoneyText !== moneyFormatted) {
+        moneyEl.textContent = moneyFormatted;
+    }
+    
+    // Время
     const remainingSeconds = totalSeconds % SECONDS_PER_DAY;
     const hours = Math.floor(remainingSeconds / 3600);
     const minutes = Math.floor((remainingSeconds % 3600) / 60);
     const seconds = remainingSeconds % 60;
     const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     
-    // АНИМАЦИЯ ДЛЯ ДНЕЙ
-    const daysEl = document.getElementById('days');
-    const currentDays = parseInt(daysEl.textContent) || 0;
-    if (currentDays !== days) {
-        animateCounter('days', currentDays, days, 600);
-    }
-    
-    // АНИМАЦИЯ ДЛЯ СИГАРЕТ
-    const cigarettesEl = document.getElementById('cigarettes');
-    const currentCigarettes = parseInt(cigarettesEl.textContent) || 0;
-    if (currentCigarettes !== cigarettes) {
-        animateCounter('cigarettes', currentCigarettes, cigarettes, 600);
-    }
-    
-    // ДЕНЬГИ: анимируем только при изменении рублей, копейки обновляем тихо
-    const moneyEl = document.getElementById('saved');
-    const currentMoneyText = moneyEl.textContent.replace(/[,\s₽]/g, '');
-    const [currentRublesStr, currentKopecks] = currentMoneyText.split(',');
-    const currentRubles = parseInt(currentRublesStr) || 0;
-    
-    if (currentRubles !== moneyRubles) {
-        // Анимация при изменении рублей
-        animateCounter('saved', currentRubles, moneyRubles, 400);
-        // После анимации обновляем копейки
-        setTimeout(() => {
-            moneyEl.textContent = formatMoney(moneyExact);
-        }, 400);
-    } else {
-        // Тихо обновляем копейки
-        moneyEl.textContent = formatMoney(moneyExact);
-    }
-    
-    // ВРЕМЯ
     const timeEl = document.getElementById('time');
     if (timeEl.textContent !== timeString) {
-        timeEl.style.transition = 'all 0.3s ease';
         timeEl.textContent = timeString;
     }
     
